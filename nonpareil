@@ -1,0 +1,15 @@
+memory90=$(awk '/MemAvailable/{printf "%d\n", $2 * 0.90;}' /proc/meminfo)
+for r1 in *R1.fastq.gz
+do
+ name="${r1##*/}"; name="${name%%_R1*}"
+ tmp=$(head /dev/urandom | tr -dc A-Za-z | head -c5)
+ pigz -dc -p "$(nproc)" ${r1} > ${tmp}
+ if [[ "${memory90}" -gt 4194303 ]]; then
+   nonpareil -s ${tmp} -T kmer -f fastq -t "$(nproc)" \
+        -R 4194303 -b ${name}
+  else
+    nonpareil -s ${tmp} -T kmer -f fastq -t "$(nproc)" \
+        -R ${memory90} -b ${name}
+  fi
+  rm ${tmp}
+done
